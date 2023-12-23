@@ -399,7 +399,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
-name = "lme2s"
+name = "lme-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "lme_workspace",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "lme_workspace"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
@@ -410,16 +420,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
-]
-
-[[package]]
-name = "lme2s-api"
-version = "0.1.0"
-dependencies = [
- "axum",
- "lme2s",
- "serde",
- "tokio",
 ]
 
 [[package]]

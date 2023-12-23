@@ -4,7 +4,7 @@ use std::{
 };
 
 use axum::{extract::Path, Extension, Json};
-use lme2s::{
+use lme_workspace::{
     entity::{Atoms, Layer, Molecule},
     nalgebra::Transform3,
     Workspace,
@@ -192,7 +192,7 @@ pub async fn transform_group(
                 .collect::<Vec<_>>();
             Ok(patch)
         } else {
-            Err(LMEAPIErrors::Workspace(lme2s::WorkspaceError::StackNotFound))
+            Err(LMEAPIErrors::Workspace(lme_workspace::WorkspaceError::StackNotFound))
         }
     }?;
 

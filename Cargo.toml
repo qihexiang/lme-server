@@ -1,5 +1,5 @@
 [package]
-name = "lme2s-api"
+name = "lme-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 axum = "0.7.2"
-lme2s = { "path" = "./lme2s" }
+lme_workspace = {path = "./lme-workspace"}
 tokio = { version = "1.35.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }

@@ -5,7 +5,7 @@ use axum::{
     routing::{delete, get, patch, post, put},
     Router,
 };
-use lme2s::Workspace;
+use lme_workspace::Workspace;
 use routes::{
     server::{create_workspace, remove_workspace, server_select_workspace},
     workspace::{

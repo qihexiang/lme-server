@@ -1,5 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
-use lme2s::WorkspaceError;
+use lme_workspace::WorkspaceError;
 use serde::Serialize;
 
 #[derive(Serialize, Clone, Copy)]

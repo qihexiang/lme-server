@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     response::Response,
 };
-use lme2s::Workspace;
+use lme_workspace::Workspace;
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
