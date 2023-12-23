@@ -1,0 +1,4 @@
+[submodule "lme-workspace"]
+	path = lme-workspace
+	url = git@github.com:qihexiang/lme-workspace.git
+	branch = main
