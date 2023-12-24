@@ -1,9 +1,9 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
-use axum::{extract::Path, Extension, Json};
+use axum::{
+    extract::{Path, Query},
+    Extension, Json,
+};
 use lme_workspace::{
     entity::{Atoms, Layer, Molecule},
     nalgebra::Transform3,
@@ -51,15 +51,30 @@ pub struct WriteToStacks {
     patch: Molecule,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct OverlayOrInplace {
+    overlay: bool,
+}
+
 pub async fn write_to_stacks(
     Extension(workspace): Extension<WorkspaceRef>,
+    Query(OverlayOrInplace { overlay }): Query<OverlayOrInplace>,
     Json(WriteToStacks { stack_idxs, patch }): Json<WriteToStacks>,
 ) -> Result<(), LMEAPIErrors> {
-    workspace
-        .write()
+    if overlay {
+        let layer = Layer::Fill(patch);
+        overlay_to_stacks(
+            Extension(workspace),
+            Json(OverlayToStacks { stack_idxs, layer }),
+        )
         .await
-        .write_to_stacks(&stack_idxs, &patch)
-        .map_err(|e| LMEAPIErrors::Workspace(e))
+    } else {
+        workspace
+            .write()
+            .await
+            .write_to_stacks(&stack_idxs, &patch)
+            .map_err(|e| LMEAPIErrors::Workspace(e))
+    }
 }
 
 #[derive(Deserialize)]
@@ -98,12 +113,12 @@ pub async fn set_name(
 
 #[derive(Deserialize)]
 pub struct RemoveNameParam {
-    atom_idx: usize
+    atom_idx: usize,
 }
 
 pub async fn remove_name(
     Extension(workspace): Extension<WorkspaceRef>,
-    Path(RemoveNameParam { atom_idx }): Path<RemoveNameParam>
+    Path(RemoveNameParam { atom_idx }): Path<RemoveNameParam>,
 ) -> Result<(), LMEAPIErrors> {
     workspace
         .write()
@@ -133,7 +148,8 @@ pub struct StackClassNamePatch {
 }
 
 pub async fn set_stack_class_name(
-    Extension(workspace): Extension<WorkspaceRef>,
+    workspace: Extension<WorkspaceRef>,
+    query: Query<OverlayOrInplace>,
     Json(StackClassNamePatch {
         stack_idxs,
         class_names,
@@ -141,11 +157,7 @@ pub async fn set_stack_class_name(
 ) -> Result<(), LMEAPIErrors> {
     let mut patch = Molecule::default();
     patch.classes.extend(class_names);
-    write_to_stacks(
-        Extension(workspace),
-        Json(WriteToStacks { stack_idxs, patch }),
-    )
-    .await
+    write_to_stacks(workspace, query, Json(WriteToStacks { stack_idxs, patch })).await
 }
 
 #[derive(Deserialize)]
@@ -153,16 +165,15 @@ pub struct TransformGroup {
     stack_idxs: Vec<usize>,
     class_name: String,
     transform: Transform3<f64>,
-    overlay: bool,
 }
 
 pub async fn transform_group(
     Extension(workspace): Extension<WorkspaceRef>,
+    Query(OverlayOrInplace { overlay }): Query<OverlayOrInplace>,
     Json(TransformGroup {
         stack_idxs,
         class_name,
         transform,
-        overlay,
     }): Json<TransformGroup>,
 ) -> Result<(), LMEAPIErrors> {
     let patch = {
@@ -192,33 +203,27 @@ pub async fn transform_group(
                 .collect::<Vec<_>>();
             Ok(patch)
         } else {
-            Err(LMEAPIErrors::Workspace(lme_workspace::WorkspaceError::StackNotFound))
+            Err(LMEAPIErrors::Workspace(
+                lme_workspace::WorkspaceError::StackNotFound,
+            ))
         }
     }?;
 
-    if overlay {
-        for (patch, stack_idx) in patch {
-            overlay_to_stacks(
-                Extension(workspace.clone()),
-                Json(OverlayToStacks {
-                    stack_idxs: vec![stack_idx],
-                    layer: Layer::Fill(patch),
-                }),
-            )
-            .await?;
-        }
-        Ok(())
-    } else {
-        for (patch, stack_idx) in patch {
-            write_to_stacks(
-                Extension(workspace.clone()),
-                Json(WriteToStacks {
-                    stack_idxs: vec![stack_idx],
-                    patch,
-                }),
-            )
-            .await?;
-        }
-        Ok(())
+    for (patch, stack_idx) in patch {
+        write_to_stacks(
+            Extension(workspace.clone()),
+            Query(OverlayOrInplace { overlay }),
+            Json(WriteToStacks {
+                stack_idxs: vec![stack_idx],
+                patch,
+            }),
+        )
+        .await?;
     }
+    Ok(())
+}
+
+#[test]
+fn default_bool() {
+    println!("{:#?}", OverlayOrInplace::default())
 }
